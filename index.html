@@ -1,0 +1,485 @@
+<!doctype html>
+<html lang="cs">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Watermark · Pánský kadeřník</title>
+<meta name="theme-color" content="#121213">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon-180.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Watermark">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:opsz,wght@6..96,500&family=Jost:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#121213; --panel:#1c1d1f; --line:#2e3033; --ink:#ece6da;
+    --muted:#8a8c8f; --accent:#9E814D;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;background:var(--bg);color:var(--ink)}
+  body{font-family:Jost,system-ui,sans-serif;font-weight:300;-webkit-tap-highlight-color:transparent;-webkit-text-size-adjust:100%}
+  .wrap{max-width:980px;margin:0 auto;padding:calc(28px + env(safe-area-inset-top)) 16px calc(120px + env(safe-area-inset-bottom))}
+
+  header{display:flex;flex-direction:column;align-items:center;gap:14px;margin-bottom:28px;text-align:center}
+  header svg{width:64px;height:64px}
+  h1{font-family:'Bodoni Moda',serif;font-weight:500;font-size:34px;line-height:1.05;margin:0}
+  .rule{width:48px;height:1px;background:var(--accent)}
+  .sub{font-size:12px;letter-spacing:.26em;text-transform:uppercase;color:var(--muted)}
+
+  .drop{display:flex;flex-direction:column;align-items:center;gap:8px;padding:34px 20px;border:1px dashed var(--line);cursor:pointer;text-align:center;transition:border-color .15s,background .15s}
+  .drop:hover,.drop.over{border-color:var(--accent);background:#161618}
+  .drop .big{font-family:'Bodoni Moda',serif;font-size:26px}
+  .drop .small{font-size:14px;color:var(--muted)}
+  .drop input{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}
+
+  .settings{display:grid;grid-template-columns:1fr;gap:18px;margin-top:24px}
+  @media (min-width:720px){.settings{grid-template-columns:1fr 1fr}}
+  .field{display:flex;flex-direction:column;gap:8px;min-width:0}
+  .lbl{font-size:12px;letter-spacing:.22em;text-transform:uppercase;color:var(--muted);display:flex;justify-content:space-between}
+  .seg{display:flex;border:1px solid var(--line)}
+  .seg button{flex:1;font:inherit;font-size:14px;font-weight:400;padding:11px 6px;background:transparent;color:var(--ink);border:0;border-right:1px solid var(--line);cursor:pointer}
+  .seg button:last-child{border-right:0}
+  .seg button[aria-pressed="true"]{background:var(--ink);color:var(--bg)}
+  input[type=range]{width:100%;accent-color:var(--accent);margin:8px 0}
+  .row{display:flex;align-items:center;gap:12px}
+  .chk{display:flex;align-items:center;gap:8px;font-size:15px;white-space:nowrap;cursor:pointer}
+  .chk input{accent-color:var(--accent);width:18px;height:18px;margin:0}
+  input[type=text]{flex:1;min-width:0;font:inherit;font-size:16px;font-weight:400;padding:10px 12px;background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:0}
+  input[type=text]:focus{outline:none;border-color:var(--accent)}
+  input[type=text]:disabled{opacity:.4}
+
+  .hint{font-size:14px;color:var(--muted);margin:26px 0 0;text-align:center}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:22px;margin-top:18px}
+  .card{background:var(--panel);display:flex;flex-direction:column;min-width:0}
+  .card canvas{display:block;width:100%;height:auto;background:#0b0b0c;user-select:none;-webkit-user-select:none}
+  .card canvas.pan-x{cursor:ew-resize;touch-action:pan-y}
+  .card canvas.pan-y{cursor:ns-resize;touch-action:none}
+  .meta{display:flex;align-items:center;gap:10px;padding:10px 10px 10px 14px}
+  .name{flex:1;min-width:0;font-size:13px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .err{padding:28px 16px;font-size:14px;color:#d9a08b;text-align:center;line-height:1.5}
+
+  .btn{font:inherit;font-weight:400;font-size:13px;letter-spacing:.16em;text-transform:uppercase;padding:13px 18px;background:transparent;color:var(--ink);border:1px solid var(--line);border-radius:0;cursor:pointer;white-space:nowrap}
+  .btn:hover{border-color:var(--muted)}
+  .btn.primary{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+  .btn.small{padding:9px 12px;font-size:12px}
+  .btn.icon{padding:9px 11px;letter-spacing:0}
+  .btn:disabled{opacity:.45;cursor:default}
+
+  .bar{position:fixed;left:0;right:0;bottom:0;display:flex;gap:10px;justify-content:center;padding:12px 16px calc(12px + env(safe-area-inset-bottom));background:rgba(18,18,19,.92);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-top:1px solid var(--line)}
+  .bar .btn.primary{flex:1;max-width:420px}
+  .toast{position:fixed;left:50%;bottom:calc(86px + env(safe-area-inset-bottom));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;font-size:14px;font-weight:400;opacity:0;transition:opacity .2s;pointer-events:none;max-width:calc(100% - 32px);text-align:center}
+  .toast.show{opacity:1}
+  [hidden]{display:none!important}
+</style>
+</head>
+<body>
+<main class="wrap">
+  <header>
+    <svg viewBox="0 0 1000 1000" aria-hidden="true"><circle cx="500" cy="500" r="390" fill="none" stroke="#9E814D" stroke-width="12"/><g transform="translate(500 500) rotate(-45)" fill="none" stroke="#ece6da" stroke-width="40" stroke-linecap="round"><circle r="36" fill="#ece6da" stroke="none"/><g transform="rotate(-21)"><line x1="-220" y1="0" x2="280" y2="0"/><circle cx="-150" cy="62" r="62"/></g><g transform="rotate(21)"><line x1="-150" y1="0" x2="280" y2="0"/><circle cx="-150" cy="-62" r="62"/></g></g></svg>
+    <h1>Watermark</h1>
+    <div class="rule"></div>
+    <div class="sub">Pánský kadeřník</div>
+  </header>
+
+  <label class="drop" id="drop">
+    <input type="file" id="file" accept="image/*" multiple>
+    <span class="big">Vyber fotky</span>
+    <span class="small">nebo je sem přetáhni · fotky zůstávají jen v tomhle zařízení</span>
+  </label>
+
+  <section class="settings">
+    <div class="field">
+      <span class="lbl">Formát</span>
+      <div class="seg" data-key="format">
+        <button data-v="post">Post 4:5</button><button data-v="story">Story 9:16</button><button data-v="orig">Originál</button>
+      </div>
+    </div>
+    <div class="field">
+      <span class="lbl">Barva loga</span>
+      <div class="seg" data-key="variant">
+        <button data-v="auto">Auto</button><button data-v="light">Světlá</button><button data-v="dark">Tmavá</button>
+      </div>
+    </div>
+    <div class="field">
+      <span class="lbl"><span>Krytí</span><span id="opv"></span></span>
+      <input type="range" id="op" min="30" max="100" step="1">
+    </div>
+    <div class="field">
+      <span class="lbl">Text u loga</span>
+      <div class="row">
+        <label class="chk"><input type="checkbox" id="sh"> Zobrazit</label>
+        <input type="text" id="handle" autocomplete="off" autocapitalize="off" spellcheck="false">
+      </div>
+    </div>
+  </section>
+
+  <p class="hint" id="hint" hidden>Výřez posuneš tažením po fotce.</p>
+  <div class="grid" id="grid"></div>
+</main>
+
+<div class="bar" id="bar" hidden>
+  <button class="btn" id="clear">Smazat</button>
+  <button class="btn primary" id="saveAll">Uložit vše</button>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+(() => {
+  'use strict';
+
+  // ---------- konfigurace ----------
+  const COLORS = { light: '#f4f0e8', dark: '#121213' };
+  const MAX_SIDE = 2160;          // max. delší strana zdrojové fotky (šetří paměť v telefonu)
+  const JPEG_Q = 0.92;
+  const FORMATS = {
+    post:  { w: 1080, h: 1350, wm: { r: 56, b: 56,  logo: 72, font: 24, gap: 20 } },
+    story: { w: 1080, h: 1920, wm: { r: 60, b: 290, logo: 80, font: 26, gap: 22 } }, // nad lištou pro odpověď
+    orig:  {                   wm: { r: 56, b: 56,  logo: 72, font: 24, gap: 20 } },
+  };
+  const DEFAULTS = { format: 'post', variant: 'auto', opacity: 72, showHandle: true, handle: '@panskykadernik6' };
+
+  // ---------- nastavení ----------
+  const S = Object.assign({}, DEFAULTS, (() => {
+    try { return JSON.parse(localStorage.getItem('wm-settings')) || {}; } catch { return {}; }
+  })());
+  const saveSettings = () => { try { localStorage.setItem('wm-settings', JSON.stringify(S)); } catch {} };
+
+  const $ = (id) => document.getElementById(id);
+  const grid = $('grid'), bar = $('bar'), hint = $('hint');
+  const coarse = matchMedia('(pointer: coarse)').matches;
+
+  const items = [];
+  let uid = 0, gen = 0, exportTimer = null;
+
+  // ---------- logo kreslené přímo do canvasu ----------
+  function drawLogo(ctx, x, y, size, ink, accent) {
+    const k = size / 1000, rad = Math.PI / 180;
+    ctx.save();
+    ctx.translate(x, y); ctx.scale(k, k);
+    ctx.lineCap = 'round';
+    ctx.strokeStyle = accent; ctx.lineWidth = 12;
+    ctx.beginPath(); ctx.arc(500, 500, 390, 0, Math.PI * 2); ctx.stroke();
+    ctx.translate(500, 500); ctx.rotate(-45 * rad);
+    ctx.strokeStyle = ink; ctx.fillStyle = ink; ctx.lineWidth = 40;
+    ctx.beginPath(); ctx.arc(0, 0, 36, 0, Math.PI * 2); ctx.fill();
+    for (const [rot, x1, cy] of [[-21, -220, 62], [21, -150, -62]]) {
+      ctx.save(); ctx.rotate(rot * rad);
+      ctx.beginPath(); ctx.moveTo(x1, 0); ctx.lineTo(280, 0); ctx.stroke();
+      ctx.beginPath(); ctx.arc(-150, cy, 62, 0, Math.PI * 2); ctx.stroke();
+      ctx.restore();
+    }
+    ctx.restore();
+  }
+
+  // ---------- načtení fotky (s orientací z EXIFu) ----------
+  function loadImg(url) {
+    return new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = rej; i.src = url; });
+  }
+  async function decodeFile(file) {
+    let src;
+    try {
+      src = await createImageBitmap(file, { imageOrientation: 'from-image' });
+    } catch {
+      const url = URL.createObjectURL(file);
+      try { src = await loadImg(url); } finally { URL.revokeObjectURL(url); }
+    }
+    const w0 = src.naturalWidth || src.width, h0 = src.naturalHeight || src.height;
+    if (!w0 || !h0) throw new Error('empty');
+    const k = Math.min(1, MAX_SIDE / Math.max(w0, h0));
+    const c = document.createElement('canvas');
+    c.width = Math.round(w0 * k); c.height = Math.round(h0 * k);
+    const x = c.getContext('2d');
+    x.imageSmoothingEnabled = true; x.imageSmoothingQuality = 'high';
+    x.drawImage(src, 0, 0, c.width, c.height);
+    if (src.close) src.close();
+    return c;
+  }
+
+  // ---------- geometrie ----------
+  function outSize(src) {
+    if (S.format === 'orig') return { W: src.width, H: src.height };
+    return { W: FORMATS[S.format].w, H: FORMATS[S.format].h };
+  }
+  function cropOf(src, W, H, it) {
+    const A = W / H, r = src.width / src.height;
+    if (Math.abs(r - A) < 0.002) return { sx: 0, sy: 0, sw: src.width, sh: src.height, axis: null };
+    if (r > A) {
+      const sw = src.height * A, slack = src.width - sw;
+      return { sx: slack * it.ox, sy: 0, sw, sh: src.height, axis: 'x', slack };
+    }
+    const sh = src.width / A, slack = src.height - sh;
+    return { sx: 0, sy: slack * it.oy, sw: src.width, sh, axis: 'y', slack };
+  }
+
+  function luminance(ctx, x, y, w, h) {
+    const cw = ctx.canvas.width, ch = ctx.canvas.height;
+    x = Math.max(0, Math.floor(x)); y = Math.max(0, Math.floor(y));
+    w = Math.max(1, Math.min(cw - x, Math.ceil(w))); h = Math.max(1, Math.min(ch - y, Math.ceil(h)));
+    const d = ctx.getImageData(x, y, w, h).data;
+    let sum = 0, n = 0;
+    for (let i = 0; i < d.length; i += 16) { sum += 0.2126 * d[i] + 0.7152 * d[i + 1] + 0.0722 * d[i + 2]; n++; }
+    return n ? sum / n / 255 : 0;
+  }
+
+  function drawWatermark(ctx, W, H, k) {
+    const p = FORMATS[S.format].wm;
+    const s = (S.format === 'orig' ? Math.min(W, H * 0.8) / 1080 : W / 1080) * k;
+    const logo = p.logo * s, fs = p.font * s, gap = p.gap * s, right = p.r * s, bottom = p.b * s;
+    const text = S.showHandle ? S.handle.trim().toUpperCase() : '';
+    const font = `400 ${fs}px Jost, sans-serif`;
+    ctx.font = font;
+    const chars = [...text], sp = fs * 0.22;
+    const widths = chars.map((c) => ctx.measureText(c).width);
+    const tw = widths.reduce((a, b) => a + b, 0) + sp * Math.max(0, chars.length - 1);
+    const totalW = logo + (text ? gap + tw : 0);
+
+    const cw = ctx.canvas.width, ch = ctx.canvas.height;
+    const x0 = cw - right - totalW, top = ch - bottom - logo;
+
+    let variant = S.variant;
+    if (variant === 'auto') {
+      const pad = 10 * s;
+      variant = luminance(ctx, x0 - pad, top - pad, totalW + 2 * pad, logo + 2 * pad) < 0.58 ? 'light' : 'dark';
+    }
+    const color = COLORS[variant];
+
+    // vše nejdřív naplno do pomocného canvasu, pak jednou s průhledností
+    // (jinak by překryvy tahů byly vidět tmavší)
+    const m = 4;
+    const oc = document.createElement('canvas');
+    oc.width = Math.ceil(totalW + 2 * m); oc.height = Math.ceil(logo + 2 * m);
+    const o = oc.getContext('2d');
+    if (text) {
+      o.font = font; o.fillStyle = color; o.textBaseline = 'middle';
+      let x = m;
+      chars.forEach((c, i) => { o.fillText(c, x, m + logo / 2 + fs * 0.04); x += widths[i] + sp; });
+    }
+    drawLogo(o, m + totalW - logo, m, logo, color, color);
+
+    ctx.save();
+    ctx.globalAlpha = S.opacity / 100;
+    ctx.drawImage(oc, x0 - m, top - m);
+    ctx.restore();
+    oc.width = oc.height = 0;
+  }
+
+  function drawScene(canvas, it, k) {
+    const { W, H } = outSize(it.src);
+    canvas.width = Math.max(1, Math.round(W * k));
+    canvas.height = Math.max(1, Math.round(H * k));
+    const ctx = canvas.getContext('2d', { willReadFrequently: true });
+    ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';
+    const c = cropOf(it.src, W, H, it);
+    ctx.drawImage(it.src, c.sx, c.sy, c.sw, c.sh, 0, 0, canvas.width, canvas.height);
+    drawWatermark(ctx, W, H, k);
+    return c;
+  }
+
+  // ---------- náhledy ----------
+  function renderPreview(it) {
+    if (!it.src || it.raf) return;
+    it.raf = requestAnimationFrame(() => {
+      it.raf = 0;
+      const { W } = outSize(it.src);
+      it.crop = drawScene(it.canvas, it, Math.min(1, 1080 / W));
+      it.canvas.classList.toggle('pan-x', it.crop.axis === 'x');
+      it.canvas.classList.toggle('pan-y', it.crop.axis === 'y');
+      updateHint();
+    });
+  }
+  function updateHint() { hint.hidden = !items.some((i) => i.crop && i.crop.axis); }
+  function invalidate(it) { it.file = null; scheduleExport(); }
+  function invalidateAll() { gen++; items.forEach((it) => { it.file = null; renderPreview(it); }); scheduleExport(); }
+
+  // ---------- export ----------
+  async function exportItem(it) {
+    const c = document.createElement('canvas');
+    drawScene(c, it, 1);
+    const blob = await new Promise((r) => c.toBlob(r, 'image/jpeg', JPEG_Q));
+    c.width = c.height = 0;
+    if (!blob) throw new Error('toBlob');
+    const base = it.name.replace(/\.[^.]+$/, '') || 'foto';
+    const suffix = { post: 'post', story: 'story', orig: 'wm' }[S.format];
+    return new File([blob], `${base}-${suffix}.jpg`, { type: 'image/jpeg', lastModified: Date.now() });
+  }
+  // soubory se připravují dopředu, aby sdílení na iPhonu proběhlo hned po klepnutí
+  function scheduleExport() {
+    clearTimeout(exportTimer);
+    exportTimer = setTimeout(runExports, 500);
+  }
+  async function runExports() {
+    const g = gen;
+    for (const it of items.slice()) {
+      if (g !== gen) return;
+      if (!it.src || it.file || it.exporting) continue;
+      it.exporting = true;
+      const myGen = gen;
+      try {
+        const f = await exportItem(it);
+        if (myGen === gen && items.includes(it)) it.file = f;
+      } catch {} finally { it.exporting = false; }
+      await new Promise((r) => setTimeout(r, 0));
+    }
+  }
+  async function ensureFiles(list) {
+    const out = [];
+    for (const it of list) {
+      if (!it.file) it.file = await exportItem(it);
+      out.push(it.file);
+    }
+    return out;
+  }
+
+  async function deliver(list) {
+    const ready = list.every((i) => i.file);
+    let files;
+    try { files = await ensureFiles(list); }
+    catch { toast('Uložení se nepovedlo, zkus to znovu.'); return; }
+    if (coarse && navigator.canShare && navigator.canShare({ files })) {
+      try { await navigator.share({ files }); return; }
+      catch (e) {
+        if (e.name === 'AbortError') return;
+        if (!ready) { toast('Hotovo – klepni ještě jednou na Uložit.'); return; }
+      }
+    }
+    for (const f of files) {
+      const a = document.createElement('a');
+      const url = URL.createObjectURL(f);
+      a.href = url; a.download = f.name;
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 5000);
+      await new Promise((r) => setTimeout(r, 350));
+    }
+    toast(files.length > 1 ? `Staženo ${files.length} fotek` : 'Staženo');
+  }
+
+  let toastTimer;
+  function toast(msg) {
+    const t = $('toast'); t.textContent = msg; t.classList.add('show');
+    clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('show'), 2400);
+  }
+
+  // ---------- karty ----------
+  function makeCard(it) {
+    const card = document.createElement('div'); card.className = 'card';
+    const canvas = document.createElement('canvas');
+    const meta = document.createElement('div'); meta.className = 'meta';
+    const name = document.createElement('span'); name.className = 'name'; name.textContent = it.name;
+    const save = document.createElement('button'); save.className = 'btn small'; save.textContent = 'Uložit';
+    const del = document.createElement('button'); del.className = 'btn small icon'; del.textContent = '✕'; del.title = 'Odebrat';
+    meta.append(name, save, del);
+    card.append(canvas, meta);
+    it.card = card; it.canvas = canvas;
+
+    save.onclick = () => it.src && deliver([it]);
+    del.onclick = () => removeItem(it);
+
+    let drag = null;
+    canvas.addEventListener('pointerdown', (e) => {
+      if (!it.crop || !it.crop.axis) return;
+      drag = { x: e.clientX, y: e.clientY, ox: it.ox, oy: it.oy };
+      canvas.setPointerCapture(e.pointerId);
+    });
+    canvas.addEventListener('pointermove', (e) => {
+      if (!drag) return;
+      const rect = canvas.getBoundingClientRect(), c = it.crop;
+      const clamp = (v) => Math.min(1, Math.max(0, v));
+      if (c.axis === 'x') it.ox = clamp(drag.ox - (e.clientX - drag.x) * (c.sw / rect.width) / c.slack);
+      else it.oy = clamp(drag.oy - (e.clientY - drag.y) * (c.sh / rect.height) / c.slack);
+      renderPreview(it);
+    });
+    const end = () => { if (drag) { drag = null; invalidate(it); } };
+    canvas.addEventListener('pointerup', end);
+    canvas.addEventListener('pointercancel', end);
+    return card;
+  }
+
+  function removeItem(it) {
+    const i = items.indexOf(it);
+    if (i >= 0) items.splice(i, 1);
+    it.card.remove();
+    if (it.src) it.src.width = it.src.height = 0;
+    it.src = null; it.file = null;
+    updateBar(); updateHint();
+  }
+  function updateBar() {
+    const n = items.filter((i) => i.src).length;
+    bar.hidden = items.length === 0;
+    $('saveAll').textContent = n > 1 ? `Uložit vše (${n})` : 'Uložit';
+    $('saveAll').disabled = n === 0;
+  }
+
+  async function addFiles(fileList) {
+    const files = [...fileList].filter((f) => f.type.startsWith('image/') || /\.(heic|heif|jpe?g|png|webp)$/i.test(f.name));
+    if (!files.length) return;
+    for (const f of files) {
+      const it = { id: ++uid, name: f.name, ox: 0.5, oy: 0.5, src: null, file: null };
+      items.push(it);
+      grid.appendChild(makeCard(it));
+      updateBar();
+      try {
+        it.src = await decodeFile(f);
+        if (!items.includes(it)) { it.src = null; continue; }
+        renderPreview(it);
+      } catch {
+        it.canvas.remove();
+        const err = document.createElement('div'); err.className = 'err';
+        err.textContent = 'Tuhle fotku prohlížeč neumí otevřít (třeba HEIC mimo Safari). Zkus ji poslat jako JPG.';
+        it.card.prepend(err);
+      }
+      updateBar();
+    }
+    scheduleExport();
+  }
+
+  // ---------- ovládání ----------
+  const fileInput = $('file');
+  fileInput.addEventListener('change', () => { addFiles(fileInput.files); fileInput.value = ''; });
+
+  const drop = $('drop');
+  ['dragenter', 'dragover'].forEach((t) => drop.addEventListener(t, (e) => { e.preventDefault(); drop.classList.add('over'); }));
+  ['dragleave', 'drop'].forEach((t) => drop.addEventListener(t, (e) => { e.preventDefault(); drop.classList.remove('over'); }));
+  drop.addEventListener('drop', (e) => e.dataTransfer && addFiles(e.dataTransfer.files));
+  window.addEventListener('dragover', (e) => e.preventDefault());
+  window.addEventListener('drop', (e) => e.preventDefault());
+
+  document.querySelectorAll('.seg').forEach((seg) => {
+    const key = seg.dataset.key;
+    const sync = () => seg.querySelectorAll('button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.v === S[key])));
+    seg.addEventListener('click', (e) => {
+      const b = e.target.closest('button'); if (!b || S[key] === b.dataset.v) return;
+      S[key] = b.dataset.v; sync(); saveSettings(); invalidateAll();
+    });
+    sync();
+  });
+
+  const op = $('op'), opv = $('opv');
+  op.value = S.opacity; opv.textContent = S.opacity + ' %';
+  op.addEventListener('input', () => { S.opacity = +op.value; opv.textContent = S.opacity + ' %'; saveSettings(); invalidateAll(); });
+
+  const sh = $('sh'), handle = $('handle');
+  sh.checked = S.showHandle; handle.value = S.handle; handle.disabled = !S.showHandle;
+  sh.addEventListener('change', () => { S.showHandle = sh.checked; handle.disabled = !sh.checked; saveSettings(); invalidateAll(); });
+  handle.addEventListener('input', () => { S.handle = handle.value; saveSettings(); invalidateAll(); });
+
+  $('saveAll').addEventListener('click', () => { const l = items.filter((i) => i.src); if (l.length) deliver(l); });
+  $('clear').addEventListener('click', () => { items.slice().forEach(removeItem); });
+
+  // po načtení fontu překreslit (text u loga je v Jost)
+  if (document.fonts) {
+    document.fonts.load('400 24px Jost').catch(() => {});
+    document.fonts.ready.then(() => invalidateAll());
+  }
+
+  if ('serviceWorker' in navigator && location.protocol === 'https:') {
+    navigator.serviceWorker.register('sw.js').catch(() => {});
+  }
+})();
+</script>
+</body>
+</html>
