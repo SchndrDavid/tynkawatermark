@@ -1,0 +1,206 @@
+<!doctype html>
+<html lang="cs">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Loga · Pánský kadeřník</title>
+<meta name="theme-color" content="#121213">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon-180.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:opsz,wght@6..96,400;6..96,500&family=Jost:wght@300;400;500&display=swap" rel="stylesheet">
+<script src="brand.js"></script>
+<style>
+  :root{--bg:#121213;--panel:#1c1d1f;--line:#2e3033;--ink:#ece6da;--muted:#8a8c8f;--accent:#9E814D}
+  *{box-sizing:border-box}
+  html,body{margin:0;background:var(--bg);color:var(--ink)}
+  body{font-family:Jost,system-ui,sans-serif;font-weight:300;-webkit-tap-highlight-color:transparent;-webkit-text-size-adjust:100%}
+  .wrap{max-width:1100px;margin:0 auto;padding:calc(18px + env(safe-area-inset-top)) 16px calc(40px + env(safe-area-inset-bottom))}
+  nav{display:flex;justify-content:center;gap:4px;margin-bottom:22px}
+  nav a{color:var(--muted);text-decoration:none;font-size:12px;letter-spacing:.24em;text-transform:uppercase;padding:8px 12px;border-bottom:1px solid transparent}
+  nav a[aria-current]{color:var(--ink);border-color:var(--accent)}
+
+  h2{font-family:'Bodoni Moda',serif;font-weight:400;font-size:30px;margin:36px 0 6px}
+  h2:first-of-type{margin-top:8px}
+  .lead{font-size:15px;color:var(--muted);margin:0 0 18px;line-height:1.5}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:18px}
+  .card{background:var(--panel);display:flex;flex-direction:column;min-width:0}
+  .thumb{aspect-ratio:1/1;display:flex;align-items:center;justify-content:center;padding:18px;background:#0b0b0c}
+  .thumb.tall{aspect-ratio:9/12}
+  .thumb.check-dark{background:repeating-conic-gradient(#2a2b2d 0 25%,#232426 0 50%) 0 0/24px 24px}
+  .thumb.check-light{background:repeating-conic-gradient(#e2dfd9 0 25%,#d4d1cb 0 50%) 0 0/24px 24px}
+  .thumb img{max-width:100%;max-height:100%;display:block;-webkit-touch-callout:default}
+  .info{padding:12px 14px 4px}
+  .info b{display:block;font-weight:400;font-size:15px}
+  .info span{display:block;font-size:13px;color:var(--muted);margin-top:3px;line-height:1.4}
+  .acts{display:flex;gap:8px;padding:12px 14px 14px;margin-top:auto}
+  .btn{font:inherit;font-weight:400;font-size:12px;letter-spacing:.16em;text-transform:uppercase;padding:10px 12px;background:transparent;color:var(--ink);border:1px solid var(--line);border-radius:0;cursor:pointer;flex:1}
+  .btn:hover{border-color:var(--muted)}
+  .btn.primary{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+  .head-row{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap}
+  .head-row .btn{flex:0 0 auto;margin-bottom:18px}
+  .toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;font-size:14px;font-weight:400;opacity:0;transition:opacity .2s;pointer-events:none;max-width:calc(100% - 32px);text-align:center;z-index:9}
+  .toast.show{opacity:1}
+</style>
+</head>
+<body>
+<main class="wrap">
+  <nav><a href="./">Watermark</a><a href="grafika.html">Grafika</a><a href="loga.html" aria-current="page">Loga</a></nav>
+
+  <h2>Instagram</h2>
+  <p class="lead">Profilová fotka a obálky pro zvýrazněné příběhy (kolečka pod bio). Na iPhonu jde obrázek uložit i podržením prstu.</p>
+  <div class="grid" id="g-ig"></div>
+
+  <div class="head-row">
+    <div><h2>Obálky highlightů</h2><p class="lead">Nahraj jako obálku zvýrazněného příběhu, Instagram si vezme kolečko uprostřed.</p></div>
+    <button class="btn primary" id="all-hl">Uložit všechny 4</button>
+  </div>
+  <div class="grid" id="g-hl"></div>
+
+  <h2>Logo</h2>
+  <p class="lead">PNG pro běžné použití, SVG pro tisk (vizitky, cedule) – jde libovolně zvětšit bez ztráty kvality.</p>
+  <div class="grid" id="g-logo"></div>
+</main>
+
+<script>
+(() => {
+  'use strict';
+  const { C, drawLogo, logoSVG, drawStache, stacheSVG } = Brand;
+  const SERIF = (s) => `400 ${s}px "Bodoni Moda", Georgia, serif`;
+  const SANS = (s) => `400 ${s}px Jost, system-ui, sans-serif`;
+
+  function spaced(ctx, t, cx, y, sp) {
+    let w = 0; for (const ch of t) w += ctx.measureText(ch).width;
+    w += sp * ([...t].length - 1);
+    let x = cx - w / 2; ctx.textAlign = 'left';
+    for (const ch of t) { ctx.fillText(ch, x, y); x += ctx.measureText(ch).width + sp; }
+  }
+
+  // --- logo s názvem (sloupec uprostřed) ---
+  function nameLockup(bg, ink, sub) {
+    return (ctx, W, H) => {
+      ctx.fillStyle = bg; ctx.fillRect(0, 0, W, H);
+      const logo = 300, g1 = 68, t = 100, g2 = 34, g3 = 34, s2 = 32;
+      const total = logo + g1 + t + g2 + 2 + g3 + s2;
+      let y = (H - total) / 2;
+      drawLogo(ctx, (W - logo) / 2, y, logo, ink, C.accent); y += logo + g1;
+      ctx.font = SERIF(t); ctx.fillStyle = ink; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText('Pánský kadeřník', W / 2, y + t / 2); y += t + g2;
+      ctx.fillStyle = C.accent; ctx.fillRect(W / 2 - 64, y, 128, 2); y += 2 + g3;
+      ctx.font = SANS(s2); ctx.fillStyle = sub;
+      spaced(ctx, 'ČELÁKOVICE', W / 2, y + s2 / 2, s2 * 0.38);
+    };
+  }
+
+  // --- obálky highlightů ---
+  function cover(glyph) {
+    return (ctx, W, H) => {
+      ctx.fillStyle = C.bg; ctx.fillRect(0, 0, W, H);
+      const cx = W / 2, cy = H / 2, r = 300;
+      ctx.strokeStyle = C.accent; ctx.lineWidth = 5;
+      ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.stroke();
+      ctx.strokeStyle = C.ink; ctx.fillStyle = C.ink; ctx.lineWidth = 16; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+      glyph(ctx, cx, cy);
+    };
+  }
+  const GLYPHS = {
+    cenik(ctx, cx, cy) {
+      ctx.font = SERIF(220); ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
+      const m = ctx.measureText('Kč');
+      const a = m.actualBoundingBoxAscent || 160, d = m.actualBoundingBoxDescent || 0;
+      ctx.fillText('Kč', cx, cy + (a - d) / 2);
+    },
+    hodiny(ctx, cx, cy) {
+      ctx.beginPath(); ctx.arc(cx, cy, 130, 0, Math.PI * 2); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(cx, cy - 92); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(cx + 66, cy + 20); ctx.stroke();
+      ctx.beginPath(); ctx.arc(cx, cy, 13, 0, Math.PI * 2); ctx.fill();
+    },
+    lokalita(ctx, cx, cy) {
+      const r = 96, c = cy - 34, tip = c + r / Math.cos(54 * Math.PI / 180);
+      ctx.beginPath();
+      ctx.arc(cx, c, r, Math.PI * 0.8, Math.PI * 2.2);
+      ctx.lineTo(cx, tip); ctx.closePath(); ctx.stroke();
+      ctx.beginPath(); ctx.arc(cx, c, 34, 0, Math.PI * 2); ctx.stroke();
+    },
+    prace(ctx, cx, cy) { drawLogo(ctx, cx - 300, cy - 300, 600, C.ink, null); },
+  };
+
+  // --- seznam souborů ---
+  const ITEMS = [
+    { g: 'ig', title: 'Profilová fotka', desc: '1080 × 1080, logo vycentrované pro kulatý výřez', name: 'profilovka', w: 1080, h: 1080,
+      draw: (ctx, W, H) => { ctx.fillStyle = C.bg; ctx.fillRect(0, 0, W, H); drawLogo(ctx, (W - 760) / 2, (H - 760) / 2, 760, C.ink, C.accent); } },
+    { g: 'ig', title: 'Logo s názvem – tmavé', desc: 'Na úvodní post nebo jako obrázek do zpráv', name: 'logo-nazev-tmave', w: 1080, h: 1080, draw: nameLockup(C.bg, C.ink, C.soft) },
+    { g: 'ig', title: 'Logo s názvem – světlé', desc: 'Světlá varianta', name: 'logo-nazev-svetle', w: 1080, h: 1080, draw: nameLockup(C.ink, C.dark, '#4a4c50') },
+
+    { g: 'hl', hl: true, title: 'Ceník', desc: 'Obálka 1080 × 1920', name: 'highlight-cenik', w: 1080, h: 1920, tall: true, draw: cover(GLYPHS.cenik) },
+    { g: 'hl', hl: true, title: 'Otevírací doba', desc: 'Obálka 1080 × 1920', name: 'highlight-oteviraci-doba', w: 1080, h: 1920, tall: true, draw: cover(GLYPHS.hodiny) },
+    { g: 'hl', hl: true, title: 'Kde mě najdete', desc: 'Obálka 1080 × 1920', name: 'highlight-lokalita', w: 1080, h: 1920, tall: true, draw: cover(GLYPHS.lokalita) },
+    { g: 'hl', hl: true, title: 'Střihy', desc: 'Obálka 1080 × 1920', name: 'highlight-strihy', w: 1080, h: 1920, tall: true, draw: cover(GLYPHS.prace) },
+
+    { g: 'logo', title: 'Logo – tmavé pozadí', desc: 'Krémové nůžky, zlatý kruh', name: 'logo-tmave', w: 2000, h: 2000,
+      draw: (ctx, W) => { ctx.fillStyle = C.bg; ctx.fillRect(0, 0, W, W); drawLogo(ctx, 0, 0, W, C.ink, C.accent); }, svg: () => logoSVG(C.ink, C.accent, C.bg) },
+    { g: 'logo', title: 'Logo – světlé pozadí', desc: 'Tmavé nůžky, zlatý kruh', name: 'logo-svetle', w: 2000, h: 2000,
+      draw: (ctx, W) => { ctx.fillStyle = C.ink; ctx.fillRect(0, 0, W, W); drawLogo(ctx, 0, 0, W, C.dark, C.accent); }, svg: () => logoSVG(C.dark, C.accent, C.ink) },
+    { g: 'logo', title: 'Logo – průhledné, světlé', desc: 'Na tmavé fotky a podklady', name: 'logo-pruhledne-svetle', w: 2000, h: 2000, check: 'dark',
+      draw: (ctx, W) => drawLogo(ctx, 0, 0, W, C.cream, C.accent), svg: () => logoSVG(C.cream, C.accent) },
+    { g: 'logo', title: 'Logo – průhledné, tmavé', desc: 'Na světlé podklady', name: 'logo-pruhledne-tmave', w: 2000, h: 2000, check: 'light',
+      draw: (ctx, W) => drawLogo(ctx, 0, 0, W, C.dark, C.accent), svg: () => logoSVG(C.dark, C.accent) },
+    { g: 'logo', title: 'Knírek', desc: 'Doplňkový motiv, zlatý, průhledný', name: 'knirek', w: 1200, h: 400, check: 'dark',
+      draw: (ctx, W) => drawStache(ctx, W / 2, 0, W, C.accent), svg: () => stacheSVG(C.accent) },
+  ];
+
+  // --- vykreslení karet ---
+  const pngs = {};
+  async function build(it) {
+    const c = document.createElement('canvas'); c.width = it.w; c.height = it.h;
+    const ctx = c.getContext('2d');
+    it.draw(ctx, it.w, it.h);
+    const f = await Brand.canvasFile(c, it.name + '.png');
+    c.width = c.height = 0;
+    pngs[it.name] = f;
+    if (it.img.src) URL.revokeObjectURL(it.img.src);
+    it.img.src = URL.createObjectURL(f);
+  }
+
+  for (const it of ITEMS) {
+    const card = document.createElement('div'); card.className = 'card';
+    const th = document.createElement('div');
+    th.className = 'thumb' + (it.tall ? ' tall' : '') + (it.check ? ' check-' + it.check : '');
+    const img = document.createElement('img'); img.alt = it.title;
+    th.append(img);
+    const info = document.createElement('div'); info.className = 'info';
+    info.innerHTML = '<b></b><span></span>';
+    info.querySelector('b').textContent = it.title; info.querySelector('span').textContent = it.desc;
+    const acts = document.createElement('div'); acts.className = 'acts';
+    const bp = document.createElement('button'); bp.className = 'btn primary'; bp.textContent = 'PNG';
+    bp.onclick = () => pngs[it.name] ? Brand.deliver([pngs[it.name]]) : Brand.toast('Ještě se připravuje…');
+    acts.append(bp);
+    if (it.svg) {
+      const bs = document.createElement('button'); bs.className = 'btn'; bs.textContent = 'SVG';
+      bs.onclick = () => Brand.deliver([Brand.textFile(it.svg(), it.name + '.svg', 'image/svg+xml')]);
+      acts.append(bs);
+    }
+    card.append(th, info, acts);
+    document.getElementById('g-' + it.g).append(card);
+    it.img = img;
+  }
+
+  document.getElementById('all-hl').onclick = () => {
+    const list = ITEMS.filter((i) => i.hl).map((i) => pngs[i.name]).filter(Boolean);
+    if (list.length) Brand.deliver(list); else Brand.toast('Ještě se připravuje…');
+  };
+
+  const buildAll = () => Promise.all(ITEMS.map(build));
+  buildAll();
+  Brand.loadFonts().then(buildAll);   // po načtení písma překreslit verze s textem
+  Brand.registerSW();
+})();
+</script>
+</body>
+</html>

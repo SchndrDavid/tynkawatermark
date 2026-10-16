@@ -1,0 +1,739 @@
+<!doctype html>
+<html lang="cs">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Grafika · Pánský kadeřník</title>
+<meta name="theme-color" content="#121213">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon-180.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:opsz,wght@6..96,400;6..96,500&family=Jost:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
+<script src="brand.js"></script>
+<style>
+  :root{--bg:#121213;--panel:#1c1d1f;--line:#2e3033;--ink:#ece6da;--muted:#8a8c8f;--accent:#9E814D}
+  *{box-sizing:border-box}
+  html,body{margin:0;background:var(--bg);color:var(--ink)}
+  body{font-family:Jost,system-ui,sans-serif;font-weight:300;-webkit-tap-highlight-color:transparent;-webkit-text-size-adjust:100%}
+  .wrap{max-width:1100px;margin:0 auto;padding:calc(18px + env(safe-area-inset-top)) 16px calc(110px + env(safe-area-inset-bottom))}
+
+  nav{display:flex;justify-content:center;gap:4px;margin-bottom:22px}
+  nav a{color:var(--muted);text-decoration:none;font-size:12px;letter-spacing:.24em;text-transform:uppercase;padding:8px 12px;border-bottom:1px solid transparent}
+  nav a[aria-current]{color:var(--ink);border-color:var(--accent)}
+
+  .layout{display:grid;grid-template-columns:1fr;gap:24px}
+  @media (min-width:860px){
+    .layout{grid-template-columns:minmax(0,1fr) minmax(0,1fr);align-items:start}
+    .preview{position:sticky;top:20px}
+  }
+  .preview canvas{display:block;width:100%;height:auto;max-height:78vh;object-fit:contain;background:#0b0b0c;margin:0 auto}
+  @media (max-width:859px){.preview canvas{max-height:none;max-width:420px}}
+
+  .lbl{display:block;font-size:12px;letter-spacing:.22em;text-transform:uppercase;color:var(--muted);margin:0 0 8px}
+  .group{margin-bottom:22px}
+  .seg{display:flex;border:1px solid var(--line)}
+  .seg button{flex:1;font:inherit;font-size:14px;font-weight:400;padding:11px 6px;background:transparent;color:var(--ink);border:0;border-right:1px solid var(--line);cursor:pointer}
+  .seg button:last-child{border-right:0}
+  .seg button[aria-pressed="true"]{background:var(--ink);color:var(--bg)}
+  .seg.big button{font-family:'Bodoni Moda',serif;font-size:17px;padding:13px 4px}
+
+  input[type=text],input[type=date],textarea{width:100%;min-width:0;font:inherit;font-size:16px;font-weight:400;padding:10px 12px;background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:0;color-scheme:dark}
+  textarea{resize:vertical;min-height:64px;line-height:1.4}
+  input:focus,textarea:focus{outline:none;border-color:var(--accent)}
+  .rows{display:flex;flex-direction:column;gap:6px}
+  .r{display:grid;gap:6px;align-items:center}
+  .r.price{grid-template-columns:minmax(0,1fr) 120px auto}
+  .r.hours{grid-template-columns:96px minmax(0,1fr) auto auto}
+  .r.week{grid-template-columns:56px 84px minmax(0,1fr) auto}
+  .r input[type=text]{padding:9px 10px}
+  .tools{display:flex}
+  .ib{font:inherit;font-size:14px;width:34px;height:40px;background:transparent;color:var(--muted);border:1px solid var(--line);border-left:0;cursor:pointer;padding:0}
+  .ib:first-child{border-left:1px solid var(--line)}
+  .ib:hover{color:var(--ink)}
+  .ib:disabled{opacity:.3;cursor:default}
+  .mute{display:flex;align-items:center;gap:5px;font-size:13px;color:var(--muted);cursor:pointer;white-space:nowrap}
+  .mute input{accent-color:var(--accent);width:17px;height:17px;margin:0}
+  .two{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.4fr);gap:6px}
+  .pick{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px}
+  .hint{font-size:13px;color:var(--muted);margin:8px 0 0;line-height:1.45}
+
+  .btn{font:inherit;font-weight:400;font-size:13px;letter-spacing:.16em;text-transform:uppercase;padding:13px 16px;background:transparent;color:var(--ink);border:1px solid var(--line);border-radius:0;cursor:pointer;white-space:nowrap}
+  .btn:hover{border-color:var(--muted)}
+  .btn.primary{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+  .btn.add{width:100%;margin-top:6px;border-style:dashed;color:var(--muted)}
+  .btn.link{border:0;padding:6px 0;color:var(--muted);letter-spacing:.12em;font-size:12px}
+  .btn.sm{padding:10px 12px;font-size:12px}
+
+  .bar{position:fixed;left:0;right:0;bottom:0;display:flex;gap:10px;justify-content:center;padding:12px 16px calc(12px + env(safe-area-inset-bottom));background:rgba(18,18,19,.92);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-top:1px solid var(--line)}
+  .bar .btn{flex:1;max-width:300px}
+  .toast{position:fixed;left:50%;bottom:calc(86px + env(safe-area-inset-bottom));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;font-size:14px;font-weight:400;opacity:0;transition:opacity .2s;pointer-events:none;max-width:calc(100% - 32px);text-align:center;z-index:9}
+  .toast.show{opacity:1}
+  [hidden]{display:none!important}
+</style>
+</head>
+<body>
+<main class="wrap">
+  <nav><a href="./">Watermark</a><a href="grafika.html" aria-current="page">Grafika</a><a href="loga.html">Loga</a></nav>
+
+  <div class="layout">
+    <div class="preview"><canvas id="cv" width="1080" height="1350"></canvas></div>
+
+    <div class="editor">
+      <div class="group">
+        <div class="seg big" data-key="type"><button data-v="cenik">Ceník</button><button data-v="hodiny">Otevírací doba</button><button data-v="mimo">Mimořádnosti</button></div>
+      </div>
+      <div class="group">
+        <span class="lbl">Formát náhledu</span>
+        <div class="seg" data-key="fmt"><button data-v="post">Post 4:5</button><button data-v="story">Story 9:16</button></div>
+      </div>
+
+      <!-- CENÍK -->
+      <section id="ed-cenik">
+        <div class="group"><span class="lbl">Nadpis</span><input type="text" data-bind="cenik.title"></div>
+        <div class="group">
+          <span class="lbl">Položky</span>
+          <div class="rows" id="rows-cenik"></div>
+          <button class="btn add" id="add-cenik">+ Přidat položku</button>
+        </div>
+      </section>
+
+      <!-- OTEVÍRACÍ DOBA -->
+      <section id="ed-hodiny" hidden>
+        <div class="group"><span class="lbl">Nadpis</span><input type="text" data-bind="hodiny.title"></div>
+        <div class="group">
+          <span class="lbl">Řádky</span>
+          <div class="rows" id="rows-hodiny"></div>
+          <button class="btn add" id="add-hodiny">+ Přidat řádek</button>
+          <p class="hint">„Šedě“ = zavřeno nebo vedlejší údaj, vykreslí se tlumeně a kurzívou.</p>
+        </div>
+        <div class="group"><span class="lbl">Poznámka (nepovinná)</span><textarea data-bind="hodiny.note" rows="2"></textarea></div>
+        <div class="group">
+          <span class="lbl">Pod otevírací dobou</span>
+          <div class="seg" data-key="hodiny.sign"><button data-v="podpis">Knírek + název</button><button data-v="telefon">Telefon</button><button data-v="nic">Nic</button></div>
+          <div class="two" id="phone-box" style="margin-top:8px">
+            <input type="text" data-bind="hodiny.contactLabel">
+            <input type="text" data-bind="hodiny.phone" inputmode="tel">
+          </div>
+        </div>
+      </section>
+
+      <!-- MIMOŘÁDNOSTI -->
+      <section id="ed-mimo" hidden>
+        <div class="group">
+          <span class="lbl">Šablona</span>
+          <div class="seg" data-key="mimo"><button data-v="den">Zavřeno – jeden den</button><button data-v="tyden">Upravený týden</button></div>
+        </div>
+
+        <div id="ed-den">
+          <div class="group"><span class="lbl">Nadpis malý (zlatý)</span><input type="text" data-bind="den.kicker"></div>
+          <div class="group"><span class="lbl">Hlavní nápis</span><input type="text" data-bind="den.title"></div>
+          <div class="group">
+            <span class="lbl">Datum</span>
+            <div class="pick"><input type="text" data-bind="den.date"><input type="date" id="den-pick" style="width:150px" title="Vybrat z kalendáře"></div>
+          </div>
+          <div class="group"><span class="lbl">Doplňující text</span><textarea data-bind="den.note" rows="3"></textarea></div>
+        </div>
+
+        <div id="ed-tyden">
+          <div class="group"><span class="lbl">Nadpis malý (zlatý)</span><input type="text" data-bind="tyden.kicker"></div>
+          <div class="group"><span class="lbl">Hlavní nápis</span><input type="text" data-bind="tyden.title"></div>
+          <div class="group"><span class="lbl">Období</span><input type="text" data-bind="tyden.range"></div>
+          <div class="group">
+            <span class="lbl">Vyplnit týden od data</span>
+            <div class="pick"><input type="date" id="tyden-pick"><button class="btn sm" id="tyden-fill">Vyplnit</button></div>
+            <p class="hint">Doplní 7 dní s datumy a běžnou otevírací dobou. Pak už jen uprav, co je jinak.</p>
+          </div>
+          <div class="group">
+            <span class="lbl">Dny</span>
+            <div class="rows" id="rows-tyden"></div>
+            <button class="btn add" id="add-tyden">+ Přidat den</button>
+            <p class="hint">Prázdný čas = „zavřeno“ (zlatou kurzívou).</p>
+          </div>
+        </div>
+      </section>
+
+      <div class="group">
+        <span class="lbl">Text dole</span>
+        <input type="text" data-bind="footer" placeholder="prázdné = bez textu">
+        <p class="hint">Platí pro všechny grafiky. Tip: adresa, nebo „Bez objednání“.</p>
+      </div>
+
+      <button class="btn link" id="reset">Obnovit výchozí obsah</button>
+    </div>
+  </div>
+</main>
+
+<div class="bar">
+  <button class="btn" id="save-one">Uložit post</button>
+  <button class="btn primary" id="save-both">Post + story</button>
+</div>
+
+<script>
+(() => {
+  'use strict';
+  const { C, drawLogo, drawStache } = Brand;
+
+  // ================= výchozí obsah =================
+  const DEFAULT = {
+    type: 'cenik', fmt: 'post', mimo: 'den',
+    footer: 'Masarykova 220 · Čelákovice',
+    cenik: {
+      title: 'Ceník služeb',
+      rows: [
+        ['Pánský střih', '250 Kč'], ['Střih Fade', '350 Kč'], ['Malé stříhání', '90–180 Kč'],
+        ['Strojek', '150 Kč'], ['Mytí + foukání + styling', '80 Kč'], ['Melír komplet', '520 Kč'],
+        ['Barva komplet', '520 Kč'], ['Vousy', '50–100 Kč'], ['Barvení vousů', '100 Kč'], ['Děti do 6 let', '150 Kč'],
+      ].map(([n, p]) => ({ n, p })),
+    },
+    hodiny: {
+      title: 'Otevírací doba', note: '', sign: 'podpis', contactLabel: 'Kontakt', phone: '+420 775 522 200',
+      rows: [{ l: 'Po–Pá', v: '8:00–20:00', m: false }, { l: 'So', v: '8:00–12:00', m: false }, { l: 'Ne', v: 'zavřeno', m: true }],
+    },
+    den: {
+      kicker: 'Mimořádně', title: 'Zavřeno', date: 'středa 28. 10.',
+      note: 'Státní svátek. Od čtvrtka 29. 10. jsem tu pro vás opět od 8:00.',
+    },
+    tyden: {
+      kicker: 'Mimořádná úprava', title: 'Otevírací doba', range: '26. 10. – 1. 11.',
+      rows: [
+        { d: 'Po', date: '26. 10.', t: '8:00–20:00' }, { d: 'Út', date: '27. 10.', t: '8:00–20:00' },
+        { d: 'St', date: '28. 10.', t: '' }, { d: 'Čt', date: '29. 10.', t: '8:00–20:00' },
+        { d: 'Pá', date: '30. 10.', t: '8:00–20:00' }, { d: 'So', date: '31. 10.', t: '8:00–12:00' },
+        { d: 'Ne', date: '1. 11.', t: '' },
+      ],
+    },
+  };
+  const REGULAR_BY_DAY = ['', '8:00–20:00', '8:00–20:00', '8:00–20:00', '8:00–20:00', '8:00–20:00', '8:00–12:00']; // Ne..So
+  const clone = (o) => JSON.parse(JSON.stringify(o));
+  const KEY = 'pk-grafika-v2';
+
+  function loadState() {
+    const s = clone(DEFAULT);
+    try {
+      const saved = JSON.parse(localStorage.getItem(KEY));
+      if (saved) { for (const k of Object.keys(s)) if (saved[k] !== undefined) s[k] = typeof s[k] === 'object' ? Object.assign(s[k], saved[k]) : saved[k]; return s; }
+      const old = JSON.parse(localStorage.getItem('pk-grafika')); // starší verze stránky
+      if (old) {
+        if (old.cenik) s.cenik = old.cenik;
+        if (old.footer !== undefined) s.footer = old.footer;
+        if (old.hodiny && old.hodiny.regular) Object.assign(s.hodiny, old.hodiny.regular, { sign: old.sign || 'podpis', phone: old.hodiny.phone || s.hodiny.phone });
+      }
+    } catch {}
+    return s;
+  }
+  let S = loadState();
+  const persist = () => { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch {} };
+
+  // ================= rozměry =================
+  const SIZE = { post: [1080, 1350], story: [1080, 1920] };
+  const FOOT = { post: { band: 20, fgap: 22, foot: 22 }, story: { band: 22, fgap: 26, foot: 24 } };
+  const L = {
+    cenik: {
+      post:  { pt: 96,  px: 110, pb: 80,  logo: 104, title: 100, hgap: 26, rule: 80, row: 38, gap: 22 },
+      story: { pt: 250, px: 120, pb: 270, logo: 140, title: 118, hgap: 32, rule: 90, row: 42, gap: 34 },
+    },
+    hodiny: {
+      post:  { pt: 110, px: 120, pb: 80,  logo: 120, title: 104, hgap: 30, rule: 80, row: 58, gap: 46, cl: 20, cv: 40, mw: 84, mg: 18, sn: 48 },
+      story: { pt: 260, px: 120, pb: 270, logo: 150, title: 118, hgap: 36, rule: 90, row: 62, gap: 64, cl: 22, cv: 46, mw: 96, mg: 22, sn: 56 },
+    },
+    den: {
+      post:  { pt: 96,  px: 110, pb: 80,  logo: 110, kick: 22, kline: 60, title: 168, date: 48, note: 26, noteMax: 640, gap: 36 },
+      story: { pt: 250, px: 120, pb: 270, logo: 140, kick: 26, kline: 60, title: 190, date: 54, note: 30, noteMax: 640, gap: 44 },
+    },
+    tyden: {
+      post:  { pt: 96,  px: 110, pb: 80,  logo: 100, hgap: 26, kick: 22, title: 100, range: 34, row: 48, dayW: 82, gap: 30 },
+      story: { pt: 250, px: 120, pb: 270, logo: 110, hgap: 32, kick: 26, title: 104, range: 40, row: 50, dayW: 92, gap: 36 },
+    },
+  };
+  const SERIF = (s, w = 400) => `${w} ${s}px "Bodoni Moda", Georgia, serif`;
+  const SANS = (w, s, it) => `${it ? 'italic ' : ''}${w} ${s}px Jost, system-ui, sans-serif`;
+
+  // ================= pomocné kreslení =================
+  function baseline(ctx, top, lh, size) {
+    const m = ctx.measureText('ÁHg');
+    const a = m.fontBoundingBoxAscent || size * 0.8, d = m.fontBoundingBoxDescent || size * 0.22;
+    return top + (lh - (a + d)) / 2 + a;
+  }
+  function spacedWidth(ctx, t, sp) {
+    let w = 0; const ch = [...t];
+    ch.forEach((c) => (w += ctx.measureText(c).width));
+    return w + sp * Math.max(0, ch.length - 1);
+  }
+  function drawSpaced(ctx, t, cx, y, sp) {
+    let x = cx - spacedWidth(ctx, t, sp) / 2;
+    ctx.textAlign = 'left';
+    for (const c of t) { ctx.fillText(c, x, y); x += ctx.measureText(c).width + sp; }
+  }
+  function dots(ctx, x1, x2, y, color, d) {
+    if (x2 - x1 < d * 3) return;
+    ctx.fillStyle = color;
+    const n = Math.floor((x2 - x1 - d) / (2 * d));
+    for (let i = 0; i <= n; i++) ctx.fillRect(x2 - d - i * 2 * d, y - d / 2, d, d);
+  }
+  function band(ctx, x, y, w, h) {
+    ctx.save(); ctx.globalAlpha = 0.6; ctx.fillStyle = C.accent; ctx.strokeStyle = C.accent;
+    ctx.fillRect(x, y, w, 1.5); ctx.fillRect(x, y + h - 1.5, w, 1.5);
+    ctx.beginPath(); ctx.rect(x, y, w, h); ctx.clip();
+    ctx.lineWidth = 1.6;
+    for (let sx = x - h; sx < x + w + h; sx += 18.4) { ctx.beginPath(); ctx.moveTo(sx, y + h); ctx.lineTo(sx + h, y); ctx.stroke(); }
+    ctx.restore();
+  }
+  function wrap(ctx, text, maxW) {
+    const out = [];
+    for (const para of String(text).split('\n')) {
+      let line = '';
+      for (const w of para.split(/\s+/).filter(Boolean)) {
+        const t = line ? line + ' ' + w : w;
+        if (ctx.measureText(t).width > maxW && line) { out.push(line); line = w; } else line = t;
+      }
+      if (line) out.push(line);
+    }
+    return out;
+  }
+  // nadpis: když se nevejde, zalomí se na dva řádky a případně zmenší
+  function fitTitle(ctx, text, maxW, size, min) {
+    ctx.font = SERIF(size);
+    let lines = [text];
+    if (ctx.measureText(text).width > maxW) {
+      const words = text.split(/\s+/);
+      if (words.length > 1) {
+        let best = null;
+        for (let i = 1; i < words.length; i++) {
+          const a = words.slice(0, i).join(' '), b = words.slice(i).join(' ');
+          const m = Math.max(ctx.measureText(a).width, ctx.measureText(b).width);
+          if (!best || m < best.m) best = { m, l: [a, b] };
+        }
+        lines = best.l;
+      }
+    }
+    const widest = (s) => { ctx.font = SERIF(s); return Math.max(...lines.map((l) => ctx.measureText(l).width)); };
+    while (size > (min || 40) && widest(size) > maxW) size -= 2;
+    ctx.font = SERIF(size);
+    return { lines, size };
+  }
+  function kicker(ctx, text, cx, top, size, withLines, lineW) {
+    const t = text.toUpperCase(), sp = size * 0.42, lh = size * 1.3;
+    ctx.font = SANS(400, size); ctx.fillStyle = C.accent;
+    const bl = baseline(ctx, top, lh, size);
+    drawSpaced(ctx, t, cx, bl, sp);
+    if (withLines) {
+      const tw = spacedWidth(ctx, t, sp), g = 20, my = top + lh / 2;
+      ctx.fillRect(cx - tw / 2 - g - lineW, my, lineW, 1.5);
+      ctx.fillRect(cx + tw / 2 + g, my, lineW, 1.5);
+    }
+    return lh;
+  }
+
+  // rozmístění bloků mezi hlavičku a patičku (jako flex space-between) se zmenšením při přetečení
+  function distribute(blocks, top, bottom) {
+    const avail = bottom - top;
+    let s = Math.min(1, ...blocks.map((b) => b.maxScale || 1));
+    for (let i = 0; i < 40; i++) {
+      const sum = blocks.reduce((a, b) => a + b.height(s), 0);
+      if ((avail - sum) / (blocks.length + 1) >= 40 || s < 0.42) break;
+      s -= 0.02;
+    }
+    const sum = blocks.reduce((a, b) => a + b.height(s), 0);
+    const gap = Math.max(14, (avail - sum) / (blocks.length + 1));
+    let y = top + gap;
+    for (const b of blocks) { b.draw(y, s); y += b.height(s) + gap; }
+  }
+
+  // ================= kreslení grafik =================
+  function render(canvas, kind, fmt) {
+    const [W, H] = SIZE[fmt], p = L[kind][fmt], f = FOOT[fmt], cw = W - 2 * p.px;
+    canvas.width = W; canvas.height = H;
+    const ctx = canvas.getContext('2d');
+    ctx.textBaseline = 'alphabetic';
+    ctx.fillStyle = C.bg; ctx.fillRect(0, 0, W, H);
+    ctx.strokeStyle = C.frame; ctx.lineWidth = 1.5; ctx.strokeRect(28.5, 28.5, W - 57, H - 57);
+
+    // --- patička ---
+    let fb = H - p.pb;
+    const foot = (S.footer || '').trim().toUpperCase();
+    if (foot) {
+      const lh = f.foot * 1.3;
+      let fs = f.foot; ctx.font = SANS(400, fs);
+      while (fs > 12 && spacedWidth(ctx, foot, fs * 0.3) > cw) { fs -= 1; ctx.font = SANS(400, fs); }
+      ctx.fillStyle = C.muted;
+      drawSpaced(ctx, foot, W / 2, baseline(ctx, fb - lh, lh, fs), fs * 0.3);
+      fb -= lh + f.fgap;
+    }
+    band(ctx, p.px, fb - f.band, cw, f.band);
+    const bottom = fb - f.band;
+
+    // --- hlavička ---
+    let y = p.pt;
+    drawLogo(ctx, (W - p.logo) / 2, y, p.logo, C.ink, C.accent);
+    y += p.logo;
+
+    if (kind === 'cenik' || kind === 'hodiny') {
+      const d = kind === 'cenik' ? S.cenik : S.hodiny;
+      y += p.hgap;
+      const t = fitTitle(ctx, (d.title || '').trim() || ' ', cw, p.title);
+      const tlh = t.size * 1.05;
+      ctx.fillStyle = C.ink; ctx.textAlign = 'center';
+      t.lines.forEach((ln, i) => ctx.fillText(ln, W / 2, baseline(ctx, y + i * tlh, tlh, t.size)));
+      y += t.lines.length * tlh + p.hgap;
+      ctx.fillStyle = C.accent; ctx.fillRect((W - p.rule) / 2, y, p.rule, 2);
+      y += 2;
+    } else if (kind === 'tyden') {
+      const d = S.tyden;
+      if (d.kicker.trim()) { y += p.hgap; y += kicker(ctx, d.kicker.trim(), W / 2, y, p.kick, false); }
+      if (d.title.trim()) {
+        y += p.hgap;
+        const t = fitTitle(ctx, d.title.trim(), cw, p.title);
+        const tlh = t.size * 1.02;
+        ctx.fillStyle = C.ink; ctx.textAlign = 'center';
+        t.lines.forEach((ln, i) => ctx.fillText(ln, W / 2, baseline(ctx, y + i * tlh, tlh, t.size)));
+        y += t.lines.length * tlh;
+      }
+      if (d.range.trim()) {
+        y += p.hgap * 0.8;
+        const lh = p.range * 1.3;
+        ctx.font = SANS(300, p.range); ctx.fillStyle = C.soft; ctx.textAlign = 'center';
+        ctx.fillText(d.range.trim(), W / 2, baseline(ctx, y, lh, p.range));
+        y += lh;
+      }
+    }
+    const top = y;
+
+    // --- obsah ---
+    const blocks = { cenik: cenikBlocks, hodiny: hodinyBlocks, den: denBlocks, tyden: tydenBlocks }[kind]();
+    distribute(blocks, top, bottom);
+
+    function cenikBlocks() {
+      const rows = S.cenik.rows.filter((r) => r.n.trim() || r.p.trim());
+      let need = 0;
+      rows.forEach((r) => {
+        ctx.font = SANS(300, p.row); const nw = ctx.measureText(r.n).width;
+        ctx.font = SANS(400, p.row); const pw = ctx.measureText(r.p).width;
+        need = Math.max(need, nw + pw + p.row * 2);
+      });
+      return [{
+        maxScale: need > cw ? cw / need : 1,
+        height: (s) => (rows.length ? rows.length * p.row * s * 1.3 + (rows.length - 1) * p.gap * s : 0),
+        draw: (y0, s) => {
+          const fs = p.row * s, lh = fs * 1.3, g = p.gap * s;
+          rows.forEach((r, i) => {
+            const rt = y0 + i * (lh + g);
+            ctx.font = SANS(300, fs);
+            const bl = baseline(ctx, rt, lh, fs);
+            ctx.fillStyle = C.ink; ctx.textAlign = 'left'; ctx.fillText(r.n, p.px, bl);
+            const nw = ctx.measureText(r.n).width;
+            ctx.font = SANS(400, fs); ctx.textAlign = 'right'; ctx.fillText(r.p, p.px + cw, bl);
+            const pw = ctx.measureText(r.p).width;
+            dots(ctx, p.px + nw + fs * 0.5, p.px + cw - pw - fs * 0.5, bl - fs * 0.24, C.dots, Math.max(2, fs * 0.08));
+          });
+        },
+      }];
+    }
+
+    function hodinyBlocks() {
+      const d = S.hodiny;
+      const rows = d.rows.filter((r) => r.l.trim() || r.v.trim());
+      const note = (d.note || '').trim();
+      let need = 0;
+      rows.forEach((r) => {
+        ctx.font = SERIF(p.row, 500); const lw = ctx.measureText(r.l).width;
+        ctx.font = SANS(300, p.row, r.m); const vw = ctx.measureText(r.v).width;
+        need = Math.max(need, lw + vw + p.row);
+      });
+      const nSize = (s) => p.row * 0.62 * s;
+      const noteLines = (s) => { ctx.font = SANS(300, nSize(s)); return note ? wrap(ctx, note, cw) : []; };
+      const rowsH = (s) => (rows.length ? rows.length * p.row * s * 1.25 + (rows.length - 1) * p.gap * s : 0);
+      const noteH = (s) => { const n = noteLines(s).length; return n ? p.gap * s * 0.9 + n * nSize(s) * 1.4 : 0; };
+      const blocks = [{
+        maxScale: need > cw ? cw / need : 1,
+        height: (s) => rowsH(s) + noteH(s),
+        draw: (y0, s) => {
+          const fs = p.row * s, lh = fs * 1.25, g = p.gap * s;
+          rows.forEach((r, i) => {
+            const rt = y0 + i * (lh + g);
+            ctx.font = SERIF(fs, 500);
+            const bl = baseline(ctx, rt, lh, fs);
+            ctx.fillStyle = r.m ? C.muted : C.ink; ctx.textAlign = 'left'; ctx.fillText(r.l, p.px, bl);
+            const lw = ctx.measureText(r.l).width;
+            ctx.font = SANS(300, fs, r.m); ctx.textAlign = 'right'; ctx.fillText(r.v, p.px + cw, bl);
+            const vw = ctx.measureText(r.v).width;
+            dots(ctx, p.px + lw + fs * 0.4, p.px + cw - vw - fs * 0.4, bl - fs * 0.2, r.m ? C.dotsMuted : C.dots, Math.max(2, fs * 0.055));
+          });
+          const nl = noteLines(s);
+          if (nl.length) {
+            const nfs = nSize(s), nlh = nfs * 1.4;
+            let ny = y0 + rowsH(s) + p.gap * s * 0.9;
+            ctx.font = SANS(300, nfs); ctx.fillStyle = C.ink; ctx.textAlign = 'center';
+            ctx.save(); ctx.globalAlpha = 0.85;
+            nl.forEach((ln) => { ctx.fillText(ln, W / 2, baseline(ctx, ny, nlh, nfs)); ny += nlh; });
+            ctx.restore();
+          }
+        },
+      }];
+      if (d.sign === 'podpis') {
+        const mh = p.mw / 3;
+        blocks.push({
+          height: () => mh + p.mg + p.sn,
+          draw: (y0) => {
+            drawStache(ctx, W / 2, y0, p.mw, C.accent);
+            ctx.font = SERIF(p.sn); ctx.fillStyle = C.ink; ctx.textAlign = 'center';
+            ctx.fillText('Pánský kadeřník', W / 2, baseline(ctx, y0 + mh + p.mg, p.sn, p.sn));
+          },
+        });
+      } else if (d.sign === 'telefon' && (d.phone.trim() || d.contactLabel.trim())) {
+        const lab = d.contactLabel.trim().toUpperCase(), ph = d.phone.trim();
+        blocks.push({
+          height: () => (lab ? p.cl * 1.3 + 10 : 0) + (ph ? p.cv * 1.3 : 0),
+          draw: (y0) => {
+            let yy = y0;
+            if (lab) {
+              ctx.font = SANS(400, p.cl); ctx.fillStyle = C.muted;
+              drawSpaced(ctx, lab, W / 2, baseline(ctx, yy, p.cl * 1.3, p.cl), p.cl * 0.3);
+              yy += p.cl * 1.3 + 10;
+            }
+            if (ph) {
+              ctx.font = SANS(400, p.cv); ctx.fillStyle = C.ink;
+              drawSpaced(ctx, ph, W / 2, baseline(ctx, yy, p.cv * 1.3, p.cv), p.cv * 0.04);
+            }
+          },
+        });
+      }
+      return blocks;
+    }
+
+    function denBlocks() {
+      const d = S.den;
+      const parts = [];
+      // každá část: výška při měřítku s + kreslení
+      if (d.kicker.trim()) parts.push({ h: (s) => p.kick * s * 1.3, draw: (y0, s) => kicker(ctx, d.kicker.trim(), W / 2, y0, p.kick * s, true, p.kline * s) });
+      if (d.title.trim()) {
+        const tt = (s) => fitTitle(ctx, d.title.trim(), cw, p.title * s, 30);
+        parts.push({
+          h: (s) => { const t = tt(s); return t.lines.length * t.size * 1.0; },
+          draw: (y0, s) => {
+            const t = tt(s), lh = t.size * 1.0;
+            ctx.font = SERIF(t.size); ctx.fillStyle = C.ink; ctx.textAlign = 'center';
+            t.lines.forEach((ln, i) => ctx.fillText(ln, W / 2, baseline(ctx, y0 + i * lh, lh, t.size)));
+          },
+        });
+      }
+      const textPart = (text, size, color, maxW) => {
+        const lines = (s) => { ctx.font = SANS(300, size * s); return wrap(ctx, text, maxW * (maxW < cw ? 1 : 1)); };
+        return {
+          h: (s) => lines(s).length * size * s * 1.35,
+          draw: (y0, s) => {
+            const fs = size * s, lh = fs * 1.35;
+            const ls = lines(s);
+            ctx.font = SANS(300, fs); ctx.fillStyle = color; ctx.textAlign = 'center';
+            ls.forEach((ln, i) => ctx.fillText(ln, W / 2, baseline(ctx, y0 + i * lh, lh, fs)));
+          },
+        };
+      };
+      if (d.date.trim()) parts.push(textPart(d.date.trim(), p.date, C.ink, cw));
+      if (d.note.trim()) parts.push(textPart(d.note.trim(), p.note, C.muted, Math.min(cw, p.noteMax)));
+      const gap = (s) => p.gap * s;
+      return [{
+        height: (s) => parts.reduce((a, x) => a + x.h(s), 0) + gap(s) * Math.max(0, parts.length - 1),
+        draw: (y0, s) => { let yy = y0; parts.forEach((x) => { x.draw(yy, s); yy += x.h(s) + gap(s); }); },
+      }];
+    }
+
+    function tydenBlocks() {
+      const rows = S.tyden.rows.filter((r) => r.d.trim() || r.date.trim() || r.t.trim());
+      const closedTxt = 'zavřeno';
+      let need = 0;
+      rows.forEach((r) => {
+        ctx.font = SANS(300, p.row); const dw = ctx.measureText(r.date).width;
+        ctx.font = SANS(300, p.row, !r.t.trim()); const vw = ctx.measureText(r.t.trim() || closedTxt).width;
+        ctx.font = SERIF(p.row, 500); const lw = Math.max(p.dayW, ctx.measureText(r.d).width + 10);
+        need = Math.max(need, lw + 24 + dw + vw + p.row);
+      });
+      return [{
+        maxScale: need > cw ? cw / need : 1,
+        height: (s) => (rows.length ? rows.length * p.row * s * 1.25 + (rows.length - 1) * p.gap * s : 0),
+        draw: (y0, s) => {
+          const fs = p.row * s, lh = fs * 1.25, g = p.gap * s, gx = 24 * s;
+          rows.forEach((r, i) => {
+            const rt = y0 + i * (lh + g);
+            ctx.font = SERIF(fs, 500);
+            const bl = baseline(ctx, rt, lh, fs);
+            ctx.fillStyle = C.ink; ctx.textAlign = 'left'; ctx.fillText(r.d, p.px, bl);
+            const dayW = Math.max(p.dayW * s, ctx.measureText(r.d).width + 10 * s);
+            ctx.font = SANS(300, fs); ctx.fillStyle = C.muted;
+            const dx = p.px + dayW + gx;
+            ctx.fillText(r.date, dx, bl);
+            const dateEnd = dx + ctx.measureText(r.date).width;
+            const open = !!r.t.trim();
+            ctx.font = SANS(300, fs, !open); ctx.fillStyle = open ? C.ink : C.accent; ctx.textAlign = 'right';
+            const val = open ? r.t.trim() : closedTxt;
+            ctx.fillText(val, p.px + cw, bl);
+            const vw = ctx.measureText(val).width;
+            dots(ctx, dateEnd + gx, p.px + cw - vw - gx, bl - fs * 0.22, C.dots, Math.max(2, fs * 0.063));
+          });
+        },
+      }];
+    }
+  }
+
+  // ================= editor =================
+  const $ = (id) => document.getElementById(id);
+  const cv = $('cv');
+  const kindOf = () => (S.type === 'mimo' ? S.mimo : S.type);
+  let raf = 0, ver = 0, prepTimer = null;
+  const files = {};
+
+  function changed() {
+    persist(); ver++;
+    for (const k in files) delete files[k];
+    if (!raf) raf = requestAnimationFrame(() => { raf = 0; render(cv, kindOf(), S.fmt); });
+    clearTimeout(prepTimer); prepTimer = setTimeout(prepare, 450);
+  }
+
+  const get = (path) => path.split('.').reduce((o, k) => o[k], S);
+  const set = (path, v) => { const ks = path.split('.'); const last = ks.pop(); ks.reduce((o, k) => o[k], S)[last] = v; };
+  const bound = [];
+  document.querySelectorAll('[data-bind]').forEach((el) => {
+    const path = el.dataset.bind;
+    const load = () => { el.value = get(path) ?? ''; };
+    load(); bound.push(load);
+    el.addEventListener('input', () => { set(path, el.value); changed(); });
+  });
+
+  function syncUI() {
+    document.querySelectorAll('.seg').forEach((seg) => {
+      const v = get(seg.dataset.key);
+      seg.querySelectorAll('button').forEach((b) => b.setAttribute('aria-pressed', String(v === b.dataset.v)));
+    });
+    $('ed-cenik').hidden = S.type !== 'cenik';
+    $('ed-hodiny').hidden = S.type !== 'hodiny';
+    $('ed-mimo').hidden = S.type !== 'mimo';
+    $('ed-den').hidden = S.mimo !== 'den';
+    $('ed-tyden').hidden = S.mimo !== 'tyden';
+    $('phone-box').hidden = S.hodiny.sign !== 'telefon';
+    $('save-one').textContent = S.fmt === 'post' ? 'Uložit post' : 'Uložit story';
+  }
+  document.querySelectorAll('.seg').forEach((seg) => {
+    seg.addEventListener('click', (e) => {
+      const b = e.target.closest('button'); if (!b) return;
+      set(seg.dataset.key, b.dataset.v); syncUI(); changed();
+    });
+  });
+
+  // --- řádkové editory ---
+  function rowTools(list, i, rerender) {
+    const w = document.createElement('div'); w.className = 'tools';
+    const mk = (txt, title, fn, dis) => { const b = document.createElement('button'); b.className = 'ib'; b.textContent = txt; b.title = title; b.disabled = !!dis; b.onclick = fn; w.append(b); };
+    mk('↑', 'Výš', () => { [list[i - 1], list[i]] = [list[i], list[i - 1]]; rerender(); changed(); }, i === 0);
+    mk('↓', 'Níž', () => { [list[i + 1], list[i]] = [list[i], list[i + 1]]; rerender(); changed(); }, i === list.length - 1);
+    mk('✕', 'Smazat', () => { list.splice(i, 1); rerender(); changed(); });
+    return w;
+  }
+  function input(val, ph, on) {
+    const el = document.createElement('input'); el.type = 'text'; el.value = val; el.placeholder = ph;
+    el.addEventListener('input', () => { on(el.value); changed(); });
+    return el;
+  }
+  function renderCenikRows() {
+    const box = $('rows-cenik'); box.textContent = '';
+    S.cenik.rows.forEach((r, i) => {
+      const row = document.createElement('div'); row.className = 'r price';
+      row.append(input(r.n, 'Služba', (v) => (r.n = v)), input(r.p, '250 Kč', (v) => (r.p = v)), rowTools(S.cenik.rows, i, renderCenikRows));
+      box.append(row);
+    });
+  }
+  function renderHodinyRows() {
+    const box = $('rows-hodiny'); box.textContent = '';
+    S.hodiny.rows.forEach((r, i) => {
+      const row = document.createElement('div'); row.className = 'r hours';
+      const m = document.createElement('label'); m.className = 'mute';
+      const cb = document.createElement('input'); cb.type = 'checkbox'; cb.checked = r.m;
+      cb.onchange = () => { r.m = cb.checked; changed(); };
+      m.append(cb, 'šedě');
+      row.append(input(r.l, 'Po–Pá', (v) => (r.l = v)), input(r.v, '8:00–20:00', (v) => (r.v = v)), m, rowTools(S.hodiny.rows, i, renderHodinyRows));
+      box.append(row);
+    });
+  }
+  function renderTydenRows() {
+    const box = $('rows-tyden'); box.textContent = '';
+    S.tyden.rows.forEach((r, i) => {
+      const row = document.createElement('div'); row.className = 'r week';
+      row.append(input(r.d, 'Po', (v) => (r.d = v)), input(r.date, '26. 10.', (v) => (r.date = v)), input(r.t, 'zavřeno', (v) => (r.t = v)), rowTools(S.tyden.rows, i, renderTydenRows));
+      box.append(row);
+    });
+  }
+  $('add-cenik').onclick = () => { S.cenik.rows.push({ n: '', p: '' }); renderCenikRows(); changed(); };
+  $('add-hodiny').onclick = () => { S.hodiny.rows.push({ l: '', v: '', m: false }); renderHodinyRows(); changed(); };
+  $('add-tyden').onclick = () => { S.tyden.rows.push({ d: '', date: '', t: '' }); renderTydenRows(); changed(); };
+
+  // --- datumy ---
+  const DAY_SHORT = ['Ne', 'Po', 'Út', 'St', 'Čt', 'Pá', 'So'];
+  const DAY_LONG = ['neděle', 'pondělí', 'úterý', 'středa', 'čtvrtek', 'pátek', 'sobota'];
+  const dm = (d) => `${d.getDate()}. ${d.getMonth() + 1}.`;
+  const parseDate = (v) => { const [y, m, d] = v.split('-').map(Number); return new Date(y, m - 1, d); };
+
+  $('den-pick').addEventListener('change', (e) => {
+    if (!e.target.value) return;
+    const d = parseDate(e.target.value);
+    S.den.date = `${DAY_LONG[d.getDay()]} ${dm(d)}`;
+    bound.forEach((f) => f()); changed();
+  });
+  $('tyden-fill').onclick = () => {
+    const v = $('tyden-pick').value;
+    if (!v) { Brand.toast('Nejdřív vyber datum.'); return; }
+    const start = parseDate(v), rows = [];
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(start); d.setDate(start.getDate() + i);
+      rows.push({ d: DAY_SHORT[d.getDay()], date: dm(d), t: REGULAR_BY_DAY[d.getDay()] });
+    }
+    const end = new Date(start); end.setDate(start.getDate() + 6);
+    S.tyden.rows = rows; S.tyden.range = `${dm(start)} – ${dm(end)}`;
+    bound.forEach((f) => f()); renderTydenRows(); changed();
+  };
+  (() => { // předvyplnit výběr příštím pondělím
+    const d = new Date(); d.setDate(d.getDate() + ((8 - d.getDay()) % 7 || 7));
+    $('tyden-pick').value = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  })();
+
+  $('reset').onclick = () => {
+    if (!confirm('Vrátit veškerý obsah grafik na výchozí?')) return;
+    const keep = { type: S.type, fmt: S.fmt, mimo: S.mimo };
+    S = Object.assign(clone(DEFAULT), keep);
+    bound.forEach((f) => f()); renderCenikRows(); renderHodinyRows(); renderTydenRows(); syncUI(); changed();
+  };
+
+  // ================= export =================
+  const NAMES = { cenik: 'cenik', hodiny: 'oteviraci-doba', den: 'mimoradne-zavreno', tyden: 'upraveny-tyden' };
+  const keyOf = (fmt) => `${kindOf()}-${fmt}`;
+  async function makeFile(fmt) {
+    const k = keyOf(fmt);
+    if (files[k]) return files[k];
+    const v = ver, kind = kindOf(), c = document.createElement('canvas');
+    render(c, kind, fmt);
+    const f = await Brand.canvasFile(c, `${NAMES[kind]}-${fmt}.png`);
+    c.width = c.height = 0;
+    if (v === ver) files[k] = f;
+    return f;
+  }
+  async function prepare() { try { await makeFile(S.fmt); await makeFile(S.fmt === 'post' ? 'story' : 'post'); } catch {} }
+  async function save(fmts) {
+    const wasLate = !fmts.every((f) => files[keyOf(f)]);
+    let list;
+    try { list = await Promise.all(fmts.map(makeFile)); } catch { Brand.toast('Uložení se nepovedlo.'); return; }
+    Brand.deliver(list, { wasLate });
+  }
+  $('save-one').onclick = () => save([S.fmt]);
+  $('save-both').onclick = () => save(['post', 'story']);
+
+  // ================= start =================
+  renderCenikRows(); renderHodinyRows(); renderTydenRows(); syncUI();
+  render(cv, kindOf(), S.fmt);
+  Brand.loadFonts().then(changed);
+  Brand.registerSW();
+})();
+</script>
+</body>
+</html>
