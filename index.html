@@ -14,7 +14,7 @@
 <meta name="apple-mobile-web-app-title" content="Watermark">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:opsz,wght@6..96,500&family=Jost:wght@300;400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:opsz,wght@6..96,400;6..96,500&family=Jost:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
   :root{
     --bg:#121213; --panel:#1c1d1f; --line:#2e3033; --ink:#ece6da;
@@ -25,6 +25,9 @@
   body{font-family:Jost,system-ui,sans-serif;font-weight:300;-webkit-tap-highlight-color:transparent;-webkit-text-size-adjust:100%}
   .wrap{max-width:980px;margin:0 auto;padding:calc(28px + env(safe-area-inset-top)) 16px calc(120px + env(safe-area-inset-bottom))}
 
+  nav{display:flex;justify-content:center;gap:4px;margin:-10px 0 22px}
+  nav a{color:var(--muted);text-decoration:none;font-size:12px;letter-spacing:.24em;text-transform:uppercase;padding:8px 12px;border-bottom:1px solid transparent}
+  nav a[aria-current]{color:var(--ink);border-color:var(--accent)}
   header{display:flex;flex-direction:column;align-items:center;gap:14px;margin-bottom:28px;text-align:center}
   header svg{width:64px;height:64px}
   h1{font-family:'Bodoni Moda',serif;font-weight:500;font-size:34px;line-height:1.05;margin:0}
@@ -79,6 +82,7 @@
 </head>
 <body>
 <main class="wrap">
+  <nav><a href="./" aria-current="page">Watermark</a><a href="grafika.html">Grafika</a></nav>
   <header>
     <svg viewBox="0 0 1000 1000" aria-hidden="true"><circle cx="500" cy="500" r="390" fill="none" stroke="#9E814D" stroke-width="12"/><g transform="translate(500 500) rotate(-45)" fill="none" stroke="#ece6da" stroke-width="40" stroke-linecap="round"><circle r="36" fill="#ece6da" stroke="none"/><g transform="rotate(-21)"><line x1="-220" y1="0" x2="280" y2="0"/><circle cx="-150" cy="62" r="62"/></g><g transform="rotate(21)"><line x1="-150" y1="0" x2="280" y2="0"/><circle cx="-150" cy="-62" r="62"/></g></g></svg>
     <h1>Watermark</h1>
@@ -110,10 +114,9 @@
       <input type="range" id="op" min="30" max="100" step="1">
     </div>
     <div class="field">
-      <span class="lbl">Text u loga</span>
-      <div class="row">
-        <label class="chk"><input type="checkbox" id="sh"> Zobrazit</label>
-        <input type="text" id="handle" autocomplete="off" autocapitalize="off" spellcheck="false">
+      <span class="lbl"><span>Rozložení</span><label class="chk" style="letter-spacing:0;text-transform:none;font-size:14px"><input type="checkbox" id="sh"> S nápisem</label></span>
+      <div class="seg" data-key="layout">
+        <button data-v="A">Roh</button><button data-v="B">Na výšku</button><button data-v="C">Linka</button>
       </div>
     </div>
   </section>
@@ -141,7 +144,8 @@
     story: { w: 1080, h: 1920, wm: { r: 60, b: 290, logo: 80, font: 26, gap: 22 } }, // nad lištou pro odpověď
     orig:  {                   wm: { r: 56, b: 56,  logo: 72, font: 24, gap: 20 } },
   };
-  const DEFAULTS = { format: 'post', variant: 'auto', opacity: 72, showHandle: true, handle: '@panskykadernik6' };
+  const DEFAULTS = { format: 'post', variant: 'auto', opacity: 72, layout: 'A', showText: true };
+  const T1 = 'Pánský kadeřník', T2 = 'Čelákovice';
 
   // ---------- nastavení ----------
   const S = Object.assign({}, DEFAULTS, (() => {
@@ -226,44 +230,107 @@
     return n ? sum / n / 255 : 0;
   }
 
+  // --- watermark: tři rozložení podle návrhu (A roh, B na výšku, C linka) ---
+  const SERIF = (z) => `400 ${z}px "Bodoni Moda", Georgia, serif`;
+  const SANS = (z) => `400 ${z}px Jost, sans-serif`;
+  function spacedW(c, t, sp) {
+    let w = 0; const a = [...t];
+    a.forEach((ch) => (w += c.measureText(ch).width));
+    return w + sp * Math.max(0, a.length - 1);
+  }
+  function spacedDraw(c, t, x, y, sp) {
+    c.textAlign = 'left';
+    for (const ch of t) { c.fillText(ch, x, y); x += c.measureText(ch).width + sp; }
+  }
+
+  // vrátí rozměry a funkci, která značku nakreslí do (o, x, y)
+  function wmLayout(c, s, color) {
+    const L = S.layout, text = S.showText;
+    if (L === 'C') {
+      const lg = 56 * s;
+      if (!text) return { w: lg, h: lg, draw: (o, x, y) => drawLogo(o, x, y, lg, color, color) };
+      const f = 16 * s, sp = f * 0.42, g = 22 * s, ln = 40 * s, a = T1.toUpperCase(), b = T2.toUpperCase();
+      c.font = SANS(f);
+      const wa = spacedW(c, a, sp), wb = spacedW(c, b, sp);
+      const w = wa + ln + lg + ln + wb + 4 * g;
+      return {
+        w, h: lg, draw: (o, x, y) => {
+          const cy = y + lg / 2, lw = Math.max(1, s);
+          o.fillStyle = color; o.font = SANS(f); o.textBaseline = 'middle';
+          spacedDraw(o, a, x, cy, sp); x += wa + g;
+          o.fillRect(x, cy - lw / 2, ln, lw); x += ln + g;
+          drawLogo(o, x, y, lg, color, color); x += lg + g;
+          o.fillRect(x, cy - lw / 2, ln, lw); x += ln + g;
+          spacedDraw(o, b, x, cy, sp);
+        },
+      };
+    }
+    if (L === 'B') {
+      const lg = 96 * s;
+      if (!text) return { w: lg, h: lg, draw: (o, x, y) => drawLogo(o, x, y, lg, color, color) };
+      const g = 16 * s, f1 = 32 * s, f2 = 14 * s, sp = f2 * 0.42, b = T2.toUpperCase();
+      c.font = SERIF(f1); const w1 = c.measureText(T1).width;
+      c.font = SANS(f2); const w2 = spacedW(c, b, sp);
+      const w = Math.max(lg, w1, w2), h = lg + g + f1 + g + f2 * 1.2;
+      return {
+        w, h, draw: (o, x, y) => {
+          const cx = x + w / 2;
+          drawLogo(o, cx - lg / 2, y, lg, color, color);
+          o.fillStyle = color; o.textBaseline = 'middle';
+          o.font = SERIF(f1); o.textAlign = 'center'; o.fillText(T1, cx, y + lg + g + f1 / 2);
+          o.font = SANS(f2); spacedDraw(o, b, cx - w2 / 2, y + lg + g + f1 + g + f2 * 0.6, sp);
+        },
+      };
+    }
+    // A – roh
+    const lg = 84 * s;
+    if (!text) return { w: lg, h: lg, draw: (o, x, y) => drawLogo(o, x, y, lg, color, color) };
+    const g = 22 * s, f1 = 38 * s, f2 = 15 * s, sp = f2 * 0.42, vg = 10 * s, ln = 28 * s, lgap = 12 * s, b = T2.toUpperCase();
+    c.font = SERIF(f1); const w1 = c.measureText(T1).width;
+    c.font = SANS(f2); const w2t = spacedW(c, b, sp);
+    const tw = Math.max(w1, w2t + lgap + ln), th = f1 + vg + f2 * 1.2;
+    const w = tw + g + lg, h = Math.max(lg, th);
+    return {
+      w, h, draw: (o, x, y) => {
+        const ty = y + (h - th) / 2, right = x + tw, lw = Math.max(1, s);
+        o.fillStyle = color; o.textBaseline = 'middle';
+        o.font = SERIF(f1); o.textAlign = 'right'; o.fillText(T1, right, ty + f1 / 2);
+        const ry = ty + f1 + vg + f2 * 0.6;
+        o.fillRect(right - ln, ry - lw / 2, ln, lw);
+        o.font = SANS(f2); spacedDraw(o, b, right - ln - lgap - w2t, ry, sp);
+        drawLogo(o, x + tw + g, y + (h - lg) / 2, lg, color, color);
+      },
+    };
+  }
+
   function drawWatermark(ctx, W, H, k) {
     const p = FORMATS[S.format].wm;
-    const s = (S.format === 'orig' ? Math.min(W, H * 0.8) / 1080 : W / 1080) * k;
-    const logo = p.logo * s, fs = p.font * s, gap = p.gap * s, right = p.r * s, bottom = p.b * s;
-    const text = S.showHandle ? S.handle.trim().toUpperCase() : '';
-    const font = `400 ${fs}px Jost, sans-serif`;
-    ctx.font = font;
-    const chars = [...text], sp = fs * 0.22;
-    const widths = chars.map((c) => ctx.measureText(c).width);
-    const tw = widths.reduce((a, b) => a + b, 0) + sp * Math.max(0, chars.length - 1);
-    const totalW = logo + (text ? gap + tw : 0);
-
+    const base = S.format === 'orig' ? Math.min(W, H * 0.8) / 1080 : W / 1080;
+    const s = base * k * (S.format === 'story' ? 1.12 : 1);
+    const right = p.r * base * k, bottom = p.b * base * k;
     const cw = ctx.canvas.width, ch = ctx.canvas.height;
-    const x0 = cw - right - totalW, top = ch - bottom - logo;
+
+    // rozměry změříme s pracovní barvou, barvu doplníme po změření pozadí
+    const probe = wmLayout(ctx, s, '#000');
+    const x0 = S.layout === 'C' ? (cw - probe.w) / 2 : cw - right - probe.w;
+    const y0 = ch - bottom - probe.h;
 
     let variant = S.variant;
     if (variant === 'auto') {
       const pad = 10 * s;
-      variant = luminance(ctx, x0 - pad, top - pad, totalW + 2 * pad, logo + 2 * pad) < 0.58 ? 'light' : 'dark';
+      variant = luminance(ctx, x0 - pad, y0 - pad, probe.w + 2 * pad, probe.h + 2 * pad) < 0.58 ? 'light' : 'dark';
     }
-    const color = COLORS[variant];
+    const lay = wmLayout(ctx, s, COLORS[variant]);
 
     // vše nejdřív naplno do pomocného canvasu, pak jednou s průhledností
     // (jinak by překryvy tahů byly vidět tmavší)
     const m = 4;
     const oc = document.createElement('canvas');
-    oc.width = Math.ceil(totalW + 2 * m); oc.height = Math.ceil(logo + 2 * m);
-    const o = oc.getContext('2d');
-    if (text) {
-      o.font = font; o.fillStyle = color; o.textBaseline = 'middle';
-      let x = m;
-      chars.forEach((c, i) => { o.fillText(c, x, m + logo / 2 + fs * 0.04); x += widths[i] + sp; });
-    }
-    drawLogo(o, m + totalW - logo, m, logo, color, color);
-
+    oc.width = Math.ceil(lay.w + 2 * m); oc.height = Math.ceil(lay.h + 2 * m);
+    lay.draw(oc.getContext('2d'), m, m);
     ctx.save();
     ctx.globalAlpha = S.opacity / 100;
-    ctx.drawImage(oc, x0 - m, top - m);
+    ctx.drawImage(oc, x0 - m, y0 - m);
     ctx.restore();
     oc.width = oc.height = 0;
   }
@@ -462,18 +529,17 @@
   op.value = S.opacity; opv.textContent = S.opacity + ' %';
   op.addEventListener('input', () => { S.opacity = +op.value; opv.textContent = S.opacity + ' %'; saveSettings(); invalidateAll(); });
 
-  const sh = $('sh'), handle = $('handle');
-  sh.checked = S.showHandle; handle.value = S.handle; handle.disabled = !S.showHandle;
-  sh.addEventListener('change', () => { S.showHandle = sh.checked; handle.disabled = !sh.checked; saveSettings(); invalidateAll(); });
-  handle.addEventListener('input', () => { S.handle = handle.value; saveSettings(); invalidateAll(); });
+  const sh = $('sh');
+  sh.checked = S.showText;
+  sh.addEventListener('change', () => { S.showText = sh.checked; saveSettings(); invalidateAll(); });
 
   $('saveAll').addEventListener('click', () => { const l = items.filter((i) => i.src); if (l.length) deliver(l); });
   $('clear').addEventListener('click', () => { items.slice().forEach(removeItem); });
 
   // po načtení fontu překreslit (text u loga je v Jost)
   if (document.fonts) {
-    document.fonts.load('400 24px Jost').catch(() => {});
-    document.fonts.ready.then(() => invalidateAll());
+    Promise.all(['400 24px Jost', '400 38px "Bodoni Moda"'].map((f) => document.fonts.load(f).catch(() => {})))
+      .then(() => invalidateAll());
   }
 
   if ('serviceWorker' in navigator && location.protocol === 'https:') {
